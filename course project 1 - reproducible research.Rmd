@@ -1,0 +1,68 @@
+#Course project 1 - reproducible research
+
+##Load library
+
+```{r warning=FALSE}
+library(ggplot2)
+```
+
+##Load and transfrom data
+
+```{r echo = TRUE,warning=FALSE}
+activity <- read.csv('activity.csv')
+activity$date <- as.Date(as.character(activity$date))
+```
+
+## What is mean total number of steps taken per day?
+
+```{r cache=TRUE,warning=FALSE}
+mean_each_day <- tapply(activity$steps, activity$date,sum,na.rm = TRUE)
+mean_per_day <- mean(mean_each_day,na.rm=TRUE)
+median_per_day <- median(mean_each_day, na.rm = TRUE)
+hist(mean_each_day,binwith = 10)
+```
+
+The mean of total number of steps tabken per day is `r mean_per_day`, and the median is `r median_per_day`.
+
+## What is the average daily activity patern?
+
+```{r warning=FALSE}
+activity$steps_interval <- tapply(activity$steps, activity$interval,mean, na.rm=TRUE)
+with(activity[activity$date == '2012-10-01',], plot(x = interval, y = steps_interval, type='l'))
+max_5 <- activity$interval[which.max(activity$steps_interval)]
+```
+On average across all the days in the dataset, 'r max_5' interval contains the maximum number of steps. 
+##Impute missing values
+```{r warning=FALSE}
+missing_row <- nrow(activity[is.na(activity$steps),])
+print(missing_row)
+activity_new <- transform(activity, steps = ifelse(is.na(activity$steps), activity$steps_interval, activity$steps))
+mean_each_day_new <- tapply(activity_new$steps, activity_new$date,sum, na.rm=TRUE)
+mean_per_day_new <- mean(mean_each_day_new, na.rm=TRUE)
+median_per_day_new <- median(mean_each_day_new, na.rm=TRUE)
+hist(mean_each_day_new,binwith = 10)
+diff_mean <- mean_per_day - mean_per_day_new
+diff_median <- median_per_day - median_per_day_new
+
+```
+
+-The new data mean is `r mean_per_day_new`
+-The new data median is `r median_per_day_new`
+-The difference of the mean with and without missing data is `r diff_mean`
+-The difference of the median with and without missing data is `r diff_median`
+
+## Are there differences in activity patterns between weekdays and weekends?
+```{r warning=FALSE}
+activity_new$date <- as.Date(as.character(activity_new$date))
+activity_new$wdy <- weekdays(activity_new$date)
+weekday <- c('Monday','Tuesday','Wednesday','Thursday','Friday')
+activity_new$weekday <- ifelse(activity_new$wdy %in% weekday, 'Weekday', 'Weekend')
+activity_weekday <- subset(activity_new, weekday == "Weekday")
+activity_weekday$steps_interval <- tapply(activity_weekday$steps, activity_weekday$interval,mean)
+activity_weekend <- subset(activity_new, weekday == 'Weekend')
+activity_weekend$steps_interval <- tapply(activity_weekend$steps, activity_weekend$interval,mean)
+par(mfrow=c(1,2),mar = c(4,4,2,1))
+with(activity_weekday[activity_weekday$date == '2012-10-01',], plot(x = interval, y = steps_interval, type='l',main = 'Weekday'))
+with(activity_weekend[activity_weekend$date == '2012-10-06',], plot(x = interval, y = steps_interval, type='l',main = 'Weekend'))
+```
+
